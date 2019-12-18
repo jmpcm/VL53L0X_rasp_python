@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import os
 import time
 from ctypes import *
 import smbus
@@ -36,13 +37,13 @@ i2cbus = smbus.SMBus(1)
 
 # i2c bus read callback
 def i2c_read(address, reg, data_p, length):
-    ret_val = 0;
+    ret_val = 0
     result = []
- 
+
     try:
         result = i2cbus.read_i2c_block_data(address, reg, length)
     except IOError:
-        ret_val = -1; 
+        ret_val = -1
 
     if (ret_val == 0):
         for index in range(length):
@@ -52,7 +53,7 @@ def i2c_read(address, reg, data_p, length):
 
 # i2c bus write callback
 def i2c_write(address, reg, data_p, length):
-    ret_val = 0;
+    ret_val = 0
     data = []
 
     for index in range(length):
@@ -60,12 +61,13 @@ def i2c_write(address, reg, data_p, length):
     try:
         i2cbus.write_i2c_block_data(address, reg, data)
     except IOError:
-        ret_val = -1; 
+        ret_val = -1
 
     return ret_val
 
-# Load VL53L0X shared lib 
-tof_lib = CDLL("../bin/vl53l0x_python.so")
+# Load VL53L0X shared lib
+lib_path = os.path.join(os.path.dirname(__file__), "../bin/vl53l0x_python.so")
+tof_lib = CDLL(lib_path)
 
 # Create read function pointer
 READFUNC = CFUNCTYPE(c_int, c_ubyte, c_ubyte, POINTER(c_ubyte), c_ubyte)
@@ -91,10 +93,10 @@ class VL53L0X(object):
         self.my_object_number = VL53L0X.object_number
         VL53L0X.object_number += 1
 
-    def start_ranging(self, mode = VL53L0X_GOOD_ACCURACY_MODE):
+    def start_ranging(self, mode=VL53L0X_GOOD_ACCURACY_MODE):
         """Start VL53L0X ToF Sensor Ranging"""
         tof_lib.startRanging(self.my_object_number, mode, self.device_address, self.TCA9548A_Device, self.TCA9548A_Address)
-        
+
     def stop_ranging(self):
         """Stop VL53L0X ToF Sensor Ranging"""
         tof_lib.stopRanging(self.my_object_number)
@@ -110,7 +112,7 @@ class VL53L0X(object):
         Dev = tof_lib.getDev(self.my_object_number)
         budget = c_uint(0)
         budget_p = pointer(budget)
-        Status =  tof_lib.VL53L0X_GetMeasurementTimingBudgetMicroSeconds(Dev, budget_p)
+        Status = tof_lib.VL53L0X_GetMeasurementTimingBudgetMicroSeconds(Dev, budget_p)
         if (Status == 0):
             return (budget.value + 1000)
         else:
